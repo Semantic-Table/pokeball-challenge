@@ -1,0 +1,69 @@
+@import url('https://fonts.googleapis.com/css2?family=Vina+Sans&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  width: 100vw;
+  height: 100vh;
+  font-family: 'Vina Sans', sans-serif;
+
+}
+
+body, canvas, .ui {
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+.ui {
+z-index: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+.score {
+  position: absolute;
+  display: flex;
+  
+  top: 0;
+  left: 0;
+  z-index: 3;
+  color: #fff;
+  font-size: 2rem;
+  padding: 1rem;
+
+}
+
+.score .title {
+  margin-right: 1rem;
+}
+
+.game-over {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  color: #fff;
+  font-size: 2rem;
+  padding: 1rem;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+}
