@@ -1,31 +1,49 @@
 import * as THREE from 'three';
 
-const pokeballTexture = new THREE.TextureLoader().load('./pokeball.png');
-const honorballTexture = new THREE.TextureLoader().load('./honorball.png');
-const hyperballTexture = new THREE.TextureLoader().load('./hyperball.png');
-const luxeballTexture = new THREE.TextureLoader().load('./luxeball.png');
-const masterballTexture = new THREE.TextureLoader().load('./masterball.png');
-const rapideballTexture = new THREE.TextureLoader().load('./rapideball.png');
-const safariballTexture = new THREE.TextureLoader().load('./safariball.png');
-const soinballTexture = new THREE.TextureLoader().load('./soinball.png');
-const sombreballTexture = new THREE.TextureLoader().load('./sombreball.png');
-const superballTexture = new THREE.TextureLoader().load('./superball.png');
-const etrangeballTexture = new THREE.TextureLoader().load('./etrangeball.png');
+const loadBallTexture = (path) => {
+    const tex = new THREE.TextureLoader().load(path);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 8;
+    return tex;
+};
+
+const pokeballTexture = loadBallTexture('./pokeball.png');
+const honorballTexture = loadBallTexture('./honorball.png');
+const hyperballTexture = loadBallTexture('./hyperball.png');
+const luxeballTexture = loadBallTexture('./luxeball.png');
+const masterballTexture = loadBallTexture('./masterball.png');
+const rapideballTexture = loadBallTexture('./rapideball.png');
+const safariballTexture = loadBallTexture('./safariball.png');
+const soinballTexture = loadBallTexture('./soinball.png');
+const sombreballTexture = loadBallTexture('./sombreball.png');
+const superballTexture = loadBallTexture('./superball.png');
+const etrangeballTexture = loadBallTexture('./etrangeball.png');
 
 
-// create basic material with texture
+const makeBallMaterial = (map, opts = {}) => new THREE.MeshStandardMaterial({
+    map,
+    metalness: 0.25,
+    roughness: 0.4,
+    envMapIntensity: 1.1,
+    ...opts,
+});
 
-export const pokeballMaterial = new THREE.MeshBasicMaterial({ map: pokeballTexture });
-export const honorballMaterial = new THREE.MeshBasicMaterial({ map: honorballTexture });
-export const hyperballMaterial = new THREE.MeshBasicMaterial({ map: hyperballTexture });
-export const luxeballMaterial = new THREE.MeshBasicMaterial({ map: luxeballTexture });
-export const masterballMaterial = new THREE.MeshBasicMaterial({ map: masterballTexture });
-export const rapideballMaterial = new THREE.MeshBasicMaterial({ map: rapideballTexture });
-export const safariballMaterial = new THREE.MeshBasicMaterial({ map: safariballTexture });
-export const soinballMaterial = new THREE.MeshBasicMaterial({ map: soinballTexture });
-export const sombreballMaterial = new THREE.MeshBasicMaterial({ map: sombreballTexture });
-export const superballMaterial = new THREE.MeshBasicMaterial({ map: superballTexture });
-export const etrangeballMaterial = new THREE.MeshBasicMaterial({ map: etrangeballTexture });
+export const pokeballMaterial = makeBallMaterial(pokeballTexture);
+export const honorballMaterial = makeBallMaterial(honorballTexture);
+export const hyperballMaterial = makeBallMaterial(hyperballTexture);
+export const luxeballMaterial = makeBallMaterial(luxeballTexture);
+export const masterballMaterial = makeBallMaterial(masterballTexture, {
+    metalness: 0.55,
+    roughness: 0.25,
+    emissive: new THREE.Color('#7a3df0'),
+    emissiveIntensity: 0.35,
+});
+export const rapideballMaterial = makeBallMaterial(rapideballTexture);
+export const safariballMaterial = makeBallMaterial(safariballTexture);
+export const soinballMaterial = makeBallMaterial(soinballTexture);
+export const sombreballMaterial = makeBallMaterial(sombreballTexture);
+export const superballMaterial = makeBallMaterial(superballTexture);
+export const etrangeballMaterial = makeBallMaterial(etrangeballTexture);
 
 export const particleMaterial = new THREE.ShaderMaterial({
     depthWrite: false,
@@ -35,7 +53,7 @@ export const particleMaterial = new THREE.ShaderMaterial({
         varying vec3 vColor;
         uniform vec3 uColor;
         uniform float uTime;
-        
+
         attribute float aVelocity;
         void main() {
             vColor = uColor;
@@ -59,6 +77,3 @@ export const particleMaterial = new THREE.ShaderMaterial({
         uTime: { value: 0 },
     }
 });
-
-
-

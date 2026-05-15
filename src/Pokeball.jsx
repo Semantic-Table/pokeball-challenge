@@ -61,7 +61,7 @@ export function Pokeball({ type, position, onCollisionEnter, pokeballId }) {
             colliders={'ball'}
             scale={adaptScale(type)}
         >
-            <mesh geometry={sphereGeometry} material={material} ref={ball}>
+            <mesh geometry={sphereGeometry} material={material} ref={ball} castShadow receiveShadow>
             </mesh>
         </RigidBody>
     </>

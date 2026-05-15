@@ -1,14 +1,20 @@
-import { useKeyboardControls } from "@react-three/drei"
+import { ContactShadows, Environment, OrbitControls, useKeyboardControls } from "@react-three/drei"
 import { useFrame, useThree } from "@react-three/fiber"
-import { Bloom, EffectComposer } from "@react-three/postprocessing"
+import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing"
 import { useEffect, useRef, useState } from "react"
+import * as THREE from "three"
 import Playground from "./Playground"
 import { Pokeball, PokeballType, adaptScale, sphereGeometry, typeToMaterial } from "./Pokeball"
 import useGame from "./stores/useGame"
-import Particles from "./Particles"
 
 const horizontalBorder = 1.6
 const verticalBorder = 0.8
+const moveSpeed = 4
+
+const _forward = new THREE.Vector3()
+const _right = new THREE.Vector3()
+const _worldUp = new THREE.Vector3(0, 1, 0)
+const _move = new THREE.Vector3()
 
 export default function Experience() {
 
@@ -19,37 +25,21 @@ export default function Experience() {
 
     const [pokeballs, setPokeballs] = useState([])
 
-    const particles = useGame(state => state.particles)
-
     const [dropPressed, setDropPressed] = useState()
-
-    const [rotateLeftPressed, setRotateLeftPressed] = useState(false)
-    const [rotateRightPressed, setRotateRightPressed] = useState(false)
 
     const [pokeballType, setPokeballType] = useState(PokeballType.POKEBALL)
 
     const [material, setMaterial] = useState(typeToMaterial(pokeballType))
-
-    const [rotation, setRotation] = useState(0)
 
     const { camera } = useThree()
 
     const pokeballsOutOfBounds = useGame(state => state.pokeballsOutOfBounds);
 
     useEffect(() => {
-        camera.position.set(0, 4, 5)
-        camera.lookAt(0, 2, 0)
+        camera.position.set(0, 5, 8)
     }, [])
 
     useEffect(() => {
-        camera.position.x = 5 * Math.sin(rotation * (Math.PI / 180))
-        camera.position.z = 5 * Math.cos(rotation * (Math.PI / 180))
-
-        camera.lookAt(0, 2, 0)
-    }, [rotation])
-
-    useEffect(() => {
-
         setMaterial(typeToMaterial(pokeballType))
     }, [pokeballType])
 
@@ -64,14 +54,6 @@ export default function Experience() {
                 (collisionPosition.z + other.rigidBodyObject.position.z) / 2
             ]
             const newType = target.rigidBodyObject.name === 10 ? 0 : target.rigidBodyObject.name + 1
-
-            const newParticles = {
-                position: averagePosition,
-                type: newType,
-                key: Math.random()
-            }
-
-            useGame.getState().addParticle(newParticles);
 
             const newPokeballs = pokeballs.filter((pokeball) => {
                 return pokeball.key !== other.rigidBodyObject.pokeballId && pokeball.key !== target.rigidBodyObject.pokeballId
@@ -89,95 +71,33 @@ export default function Experience() {
 
 
     useFrame(({ camera }, delta) => {
-        // CONTROLS
 
         if (useGame.getState().phase === 'playing') {
 
-            if (get().rotateRight && !rotateRightPressed) {
-                setRotation(rotateRight(rotation))
-                setRotateRightPressed(true)
-            }
+            camera.getWorldDirection(_forward)
+            _forward.y = 0
+            if (_forward.lengthSq() > 0) _forward.normalize()
+            _right.copy(_forward).cross(_worldUp)
 
-            if (!get().rotateRight && rotateRightPressed) {
-                setRotateRightPressed(false)
-            }
+            let inputX = 0
+            let inputZ = 0
+            if (get().left)  inputX -= 1
+            if (get().right) inputX += 1
+            if (get().up)    inputZ += 1
+            if (get().down)  inputZ -= 1
 
-            if (get().rotateLeft && !rotateLeftPressed) {
-                setRotateLeftPressed(true)
-                setRotation(rotateLeft(rotation))
-            }
+            if (inputX !== 0 || inputZ !== 0) {
+                _move.set(0, 0, 0)
+                    .addScaledVector(_right, inputX)
+                    .addScaledVector(_forward, inputZ)
+                    .normalize()
+                    .multiplyScalar(moveSpeed * delta)
 
-            if (!get().rotateLeft && rotateLeftPressed) {
-                setRotateLeftPressed(false)
-            }
-
-
-            if (get().left && !get().right) {
-                if (rotation === 0 && pokeballToPlace.current.position.x > -horizontalBorder) {
-                    pokeballToPlace.current.position.x -= 4 * delta
-                    reticule.current.position.x = pokeballToPlace.current.position.x
-                } else if (rotation === 90 && pokeballToPlace.current.position.z < verticalBorder) {
-                    pokeballToPlace.current.position.z += 4 * delta
-                    reticule.current.position.z = pokeballToPlace.current.position.z
-                } else if (rotation === 180 && pokeballToPlace.current.position.x < horizontalBorder) {
-                    pokeballToPlace.current.position.x += 4 * delta
-                    reticule.current.position.x = pokeballToPlace.current.position.x
-                } else if (rotation === 270 && pokeballToPlace.current.position.z > -verticalBorder) {
-                    pokeballToPlace.current.position.z -= 4 * delta
-                    reticule.current.position.z = pokeballToPlace.current.position.z
-                }
-            }
-
-            if (get().right && !get().left) {
-
-                if (rotation === 0 && pokeballToPlace.current.position.x < horizontalBorder) {
-                    pokeballToPlace.current.position.x += 4 * delta
-                    reticule.current.position.x = pokeballToPlace.current.position.x
-                } else if (rotation === 90 && pokeballToPlace.current.position.z > -verticalBorder) {
-                    pokeballToPlace.current.position.z -= 4 * delta
-                    reticule.current.position.z = pokeballToPlace.current.position.z
-                }
-                else if (rotation === 180 && pokeballToPlace.current.position.x > -horizontalBorder) {
-                    pokeballToPlace.current.position.x -= 4 * delta
-                    reticule.current.position.x = pokeballToPlace.current.position.x
-                } else if (rotation === 270 && pokeballToPlace.current.position.z < verticalBorder) {
-                    pokeballToPlace.current.position.z += 4 * delta
-                    reticule.current.position.z = pokeballToPlace.current.position.z
-                }
-            }
-
-            if (get().up && !get().down) {
-                if (rotation === 0 && pokeballToPlace.current.position.z > -verticalBorder) {
-                    pokeballToPlace.current.position.z -= 4 * delta
-                    reticule.current.position.z = pokeballToPlace.current.position.z
-                } else if (rotation === 90 && pokeballToPlace.current.position.x > -horizontalBorder) {
-                    pokeballToPlace.current.position.x -= 4 * delta
-                    reticule.current.position.x = pokeballToPlace.current.position.x
-                } else if (rotation === 180 && pokeballToPlace.current.position.z < verticalBorder) {
-                    pokeballToPlace.current.position.z += 4 * delta
-                    reticule.current.position.z = pokeballToPlace.current.position.z
-                } else if (rotation === 270 && pokeballToPlace.current.position.x < horizontalBorder) {
-                    pokeballToPlace.current.position.x += 4 * delta
-                    reticule.current.position.x = pokeballToPlace.current.position.x
-                }
-
-            }
-
-            if (get().down && !get().up) {
-                if (rotation === 0 && pokeballToPlace.current.position.z < verticalBorder) {
-                    pokeballToPlace.current.position.z += 4 * delta
-                    reticule.current.position.z = pokeballToPlace.current.position.z
-                } else if (rotation === 90 && pokeballToPlace.current.position.x < horizontalBorder) {
-                    pokeballToPlace.current.position.x += 4 * delta
-                    reticule.current.position.x = pokeballToPlace.current.position.x
-                } else if (rotation === 180 && pokeballToPlace.current.position.z > -verticalBorder) {
-                    pokeballToPlace.current.position.z -= 4 * delta
-                    reticule.current.position.z = pokeballToPlace.current.position.z
-                } else if (rotation === 270 && pokeballToPlace.current.position.x > -horizontalBorder) {
-                    pokeballToPlace.current.position.x -= 4 * delta
-                    reticule.current.position.x = pokeballToPlace.current.position.x
-                }
-
+                const next = pokeballToPlace.current.position
+                next.x = THREE.MathUtils.clamp(next.x + _move.x, -horizontalBorder, horizontalBorder)
+                next.z = THREE.MathUtils.clamp(next.z + _move.z, -verticalBorder, verticalBorder)
+                reticule.current.position.x = next.x
+                reticule.current.position.z = next.z
             }
 
             if (get().drop && !dropPressed && pokeballsOutOfBounds.length === 0) {
@@ -207,13 +127,49 @@ export default function Experience() {
 
     return (
         <>
-            <color attach="background" args={['#000000']} />
-            <ambientLight />
-            <EffectComposer>
+            <Environment files="./pokemon_center.hdr" background blur={0.15} />
+
+            <ambientLight intensity={0.18} />
+            <directionalLight
+                position={[6, 9, 5]}
+                intensity={0.55}
+                color={'#ffe8c7'}
+                castShadow
+                shadow-mapSize={[1024, 1024]}
+                shadow-camera-left={-6}
+                shadow-camera-right={6}
+                shadow-camera-top={6}
+                shadow-camera-bottom={-6}
+                shadow-bias={-0.0005}
+            />
+
+            <OrbitControls
+                target={[0, 2, 0]}
+                enableZoom={false}
+                enablePan={false}
+                enableDamping
+                minPolarAngle={0.4}
+                maxPolarAngle={Math.PI / 2 - 0.05}
+                rotateSpeed={0.7}
+            />
+
+            <ContactShadows
+                position={[0, 0.08, 0]}
+                opacity={0.55}
+                scale={9}
+                blur={2.4}
+                far={5}
+                resolution={512}
+            />
+
+            <EffectComposer multisampling={4}>
                 <Bloom
-                    intensity={1} // The bloom intensity.
-                    luminanceThreshold={0.99} // luminance threshold. Raise this value to mask out darker elements in the scene.
+                    intensity={0.8}
+                    luminanceThreshold={0.55}
+                    luminanceSmoothing={0.25}
+                    mipmapBlur
                 />
+                <Vignette eskil={false} offset={0.2} darkness={0.7} />
             </EffectComposer>
             <mesh
                 ref={pokeballToPlace}
@@ -221,17 +177,18 @@ export default function Experience() {
                 geometry={sphereGeometry}
                 material={material}
                 scale={adaptScale(pokeballType)}
+                castShadow
             />
-            <mesh ref={reticule} position={[0, 2.25, 0]}>
-                <cylinderGeometry args={[0.01, 0.01, 4.5, 32]} />
-                <meshBasicMaterial color={'#ffffff'} />
-            </mesh>
-
-            {
-                particles.map((particle) => {
-                    return <Particles key={particle.key} position={particle.position} id={particle.key} type={particle.type} />
-                })
-            }
+            <group ref={reticule}>
+                <mesh position={[0, 2.25, 0]}>
+                    <cylinderGeometry args={[0.012, 0.012, 4.5, 16]} />
+                    <meshBasicMaterial color={'#ffffff'} transparent opacity={0.45} />
+                </mesh>
+                <mesh position={[0, 0.13, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                    <ringGeometry args={[0.18, 0.24, 48]} />
+                    <meshBasicMaterial color={'#ffffff'} transparent opacity={0.85} toneMapped={false} />
+                </mesh>
+            </group>
 
             {pokeballs.map((pokeball) => {
                 return <Pokeball key={pokeball.key} pokeballId={pokeball.key} type={pokeball.type} position={pokeball.position} onCollisionEnter={(manifold, target, other) => {
@@ -245,8 +202,6 @@ export default function Experience() {
 }
 
 
-
-
 const addRandomToPosition = (position) => {
     return {
         x: position.x + (Math.random() * 0.1 - 0.05),
@@ -258,31 +213,4 @@ const addRandomToPosition = (position) => {
 
 const randomInteger = (min, max) => {
     return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-
-const rotateLeft = (position) => {
-    switch (position) {
-        case 90:
-            return 180
-        case 180:
-            return 270
-        case 270:
-            return 0
-        case 0:
-            return 90
-    }
-}
-
-const rotateRight = (position) => {
-    switch (position) {
-        case 90:
-            return 0
-        case 180:
-            return 90
-        case 270:
-            return 180
-        case 0:
-            return 270
-    }
 }
