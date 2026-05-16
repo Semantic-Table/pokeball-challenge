@@ -4,9 +4,9 @@ import { subscribeWithSelector } from "zustand/middleware";
 
 export default create(subscribeWithSelector((set) => ({
     score: 0,
-    setScore: (score) => set({ score }),
     addScore: (score) => set(state => ({ score: state.score + score })),
     phase: 'menu',
+    isNewRecord: false,
 
     pokeballsOutOfBounds: [],  // [{ id, since: timestamp ms }]
     removePokeball: (pokeballId) => set(state => ({
@@ -27,19 +27,21 @@ export default create(subscribeWithSelector((set) => ({
             return {
                 score: 0,
                 phase: 'playing',
+                isNewRecord: false,
             }
         }
         return {}
     }),
     end: () => set((state) => {
         if (state.phase === 'playing') {
-            localStorage.setItem('highscore', Math.max(state.score, localStorage.getItem('highscore') || 0))
+            const oldHigh = parseInt(localStorage.getItem('highscore') || '0', 10)
+            const isRecord = state.score > oldHigh && state.score > 0
+            localStorage.setItem('highscore', String(Math.max(state.score, oldHigh)))
             return {
                 phase: 'ended',
+                isNewRecord: isRecord,
             }
-
-        } else {
-            return {}
         }
+        return {}
     })
 })));

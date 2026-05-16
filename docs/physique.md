@@ -79,7 +79,7 @@ Points subtils :
 - **Garde `other.rigidBodyObject &&`** : la collision peut être avec un collider statique (mur) qui n'a pas de `rigidBodyObject`. Sans la garde, accès à `.name` sur `undefined`.
 - **Comparaison stricte** : `name === name`. Comme le `name` est un entier, c'est de l'égalité numérique.
 - **Position moyenne entre contact et `other.position`** : le contact point est la surface, la position de `other` est son centre. La moyenne place la ball fusionnée à mi-chemin — visuellement plausible.
-- **Wrap `10 → 0`** : la Masterball relance la chaîne à Pokéball. Probablement un bug (devrait être `name === 10 ? 10 : name + 1` ou similaire pour stopper l'évolution).
+- **Cap au rang Master** : si `targetType >= MASTERBALL` (10), on early-return avant la création. Deux Master balls qui se touchent ne fusionnent pas — elles se contentent de collider. Sans ce check, l'ancien code wrappait à `0` (`name === 10 ? 0 : name + 1`) → une Pokéball minuscule (r=0.3) apparaissait à la place de deux Master (r=0.9) qui fusionnaient. Le name est coercé en int via `parseInt(..., 10)` par sécurité (Three.js peut sérialiser le nom d'un Object3D en string).
 
 ## Double-comptage des collisions
 

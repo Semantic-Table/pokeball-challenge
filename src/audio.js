@@ -33,6 +33,7 @@ const sfxLevelToGain = (lvl) => lvl / 5              // 0 → mute, 5 → 1.0
 
 let initialized = false
 let sfxOutput = null
+let sfxReverb = null
 let dropSynth = null
 let mergeSynth = null
 let gameOverSynth = null
@@ -46,7 +47,10 @@ const VOL = {
 }
 
 function buildSynths() {
-    sfxOutput = new Tone.Gain(sfxLevelToGain(sfxLevel)).toDestination()
+    // chaîne SFX : synthés → Gain (volume) → Reverb (ambiance) → destination
+    sfxReverb = new Tone.Reverb({ decay: 1.4, wet: 0.18 }).toDestination()
+    sfxReverb.generate().catch(() => {})  // pré-cuit l'IR pour éviter un glitch au 1er trigger
+    sfxOutput = new Tone.Gain(sfxLevelToGain(sfxLevel)).connect(sfxReverb)
 
     dropSynth = new Tone.MembraneSynth({
         pitchDecay: 0.02,

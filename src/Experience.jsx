@@ -142,7 +142,7 @@ export default function Experience() {
     const spawnTime = useRef(performance.now())
     const lastDropTime = useRef(0)
 
-    const [sub, get] = useKeyboardControls()
+    const [, get] = useKeyboardControls()
 
     const [pokeballs, setPokeballs] = useState([])
     const [mergeEffects, setMergeEffects] = useState([])
@@ -172,10 +172,14 @@ export default function Experience() {
         }
     }, [pokeballType])
 
-    // quand on entre en phase 'playing' depuis le menu, redéclencher le spawn
-    // pop pour que la première Pokéball apparaisse proprement
+    // À chaque entrée en phase 'playing' : clear l'ancien état (balls + effets)
+    // sinon les anciens Pokéballs gardent leur oobSince stale et rappellent end()
+    // immédiatement. Couvre R-restart ET clic "Play Again".
     useEffect(() => {
         if (phase === 'playing') {
+            setPokeballs([])
+            setMergeEffects([])
+            setVanishEffects([])
             spawnTime.current = performance.now()
             if (pokeballToPlace.current) {
                 pokeballToPlace.current.scale.setScalar(0)
@@ -191,54 +195,72 @@ export default function Experience() {
     const onPokeballCollide = (manifold, target, other) => {
 
         const collisionPosition = manifold.solverContactPoint(0)
-        if (other.rigidBodyObject && other.rigidBodyObject.name === target.rigidBodyObject.name) {
+        if (!other.rigidBodyObject) return
 
-            // Rapier fire onCollisionEnter sur LES DEUX balls qui collisionnent.
-            // On ne traite la fusion qu'une fois par paire — celle dont l'id est le plus petit.
-            if (target.rigidBodyObject.pokeballId > other.rigidBodyObject.pokeballId) {
-                return
-            }
+        // coerce name en int (par sécurité au cas où Three.js le sérialise en string)
+        const targetType = parseInt(target.rigidBodyObject.name, 10)
+        const otherType = parseInt(other.rigidBodyObject.name, 10)
 
-            const averagePosition = [
-                (collisionPosition.x + other.rigidBodyObject.position.x) / 2,
-                (collisionPosition.y + other.rigidBodyObject.position.y) / 2,
-                (collisionPosition.z + other.rigidBodyObject.position.z) / 2
-            ]
-            const newType = target.rigidBodyObject.name === 10 ? 0 : target.rigidBodyObject.name + 1
+        if (targetType !== otherType) return
 
-            const newPokeballs = pokeballs.filter((pokeball) => {
-                return pokeball.key !== other.rigidBodyObject.pokeballId && pokeball.key !== target.rigidBodyObject.pokeballId
-            })
+        // Rapier fire onCollisionEnter sur LES DEUX balls qui collisionnent.
+        // On ne traite la fusion qu'une fois par paire — celle dont l'id est le plus petit.
+        if (target.rigidBodyObject.pokeballId > other.rigidBodyObject.pokeballId) return
 
-            const newPokeball = {
-                position: averagePosition,
-                type: newType,
-                key: Math.random()
-            }
+        // Master ball est le rang final : deux Master ne fusionnent pas
+        // (sans ce check, l'ancien code wrappait à 0 → Pokéball, c.à.d. une
+        // ball minuscule à la place de deux énormes Master)
+        if (targetType >= PokeballType.MASTERBALL) return
 
-            setPokeballs([...newPokeballs, newPokeball])
+        const averagePosition = [
+            (collisionPosition.x + other.rigidBodyObject.position.x) / 2,
+            (collisionPosition.y + other.rigidBodyObject.position.y) / 2,
+            (collisionPosition.z + other.rigidBodyObject.position.z) / 2
+        ]
+        const newType = targetType + 1
 
-            // juice : ring néon + score flottant + burst de particules
-            const effectId = Math.random()
-            const glow = typeToGlowColor(newType)
-            setMergeEffects(prev => [...prev, {
-                id: effectId,
-                position: averagePosition,
-                color: glow,
-                score: typeToScore(newType),
-            }])
-            setTimeout(() => {
-                setMergeEffects(prev => prev.filter(e => e.id !== effectId))
-            }, 900)
+        // clamp la position de spawn pour que la nouvelle ball (plus grosse que
+        // ses parents) ne naisse jamais en intersection avec un mur — sinon le
+        // solveur Rapier la kick au moment de résoudre la pénétration
+        const newRadius = 0.2 * adaptScale(newType)
+        const clampedPosition = [
+            Math.max(-1.5 + newRadius, Math.min(1.5 - newRadius, averagePosition[0])),
+            averagePosition[1],
+            Math.max(-0.9 + newRadius, Math.min(0.9 - newRadius, averagePosition[2])),
+        ]
 
-            useGame.getState().addParticle({
-                position: averagePosition,
-                type: newType,
-                key: Math.random(),
-            })
+        const newPokeballs = pokeballs.filter((pokeball) => {
+            return pokeball.key !== other.rigidBodyObject.pokeballId && pokeball.key !== target.rigidBodyObject.pokeballId
+        })
 
-            playMerge(newType)
+        const newPokeball = {
+            position: clampedPosition,
+            type: newType,
+            key: Math.random()
         }
+
+        setPokeballs([...newPokeballs, newPokeball])
+
+        // juice : ring néon + score flottant + burst de particules
+        const effectId = Math.random()
+        const glow = typeToGlowColor(newType)
+        setMergeEffects(prev => [...prev, {
+            id: effectId,
+            position: clampedPosition,
+            color: glow,
+            score: typeToScore(newType),
+        }])
+        setTimeout(() => {
+            setMergeEffects(prev => prev.filter(e => e.id !== effectId))
+        }, 900)
+
+        useGame.getState().addParticle({
+            position: clampedPosition,
+            type: newType,
+            key: Math.random(),
+        })
+
+        playMerge(newType)
     }
 
 
@@ -306,7 +328,6 @@ export default function Experience() {
         } else if (useGame.getState().phase === 'ended') {
 
             if (get().restart) {
-                setPokeballs([])
                 useGame.getState().start()
             }
         } else if (useGame.getState().phase === 'menu') {

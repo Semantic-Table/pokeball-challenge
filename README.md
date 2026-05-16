@@ -41,14 +41,13 @@ Seuls les 5 premiers types peuvent apparaître à la main du joueur — les rang
 
 ## Stack technique
 
-- **React 18** + **Vite**
+- **React 18** + **Vite 6**
 - **@react-three/fiber** — rendu Three.js déclaratif
-- **@react-three/drei** — helpers (KeyboardControls, OrbitControls, useTexture…)
+- **@react-three/drei** — helpers (KeyboardControls, OrbitControls, Environment, Html, Billboard, MeshReflectorMaterial…)
 - **@react-three/rapier** — physique rigide pour les collisions
-- **@react-three/postprocessing** — effet Bloom sur la scène
+- **@react-three/postprocessing** — effets Bloom + Vignette
 - **Zustand** — store global (score, phase, particules, balls hors-zone)
-- **r3f-perf** — moniteur de performance en dev
-- **vite-plugin-glsl** — chargement de shaders GLSL
+- **Tone.js** — synthés procéduraux pour les SFX (drop, merge, gameOver, start)
 
 ## Installation
 
@@ -67,8 +66,8 @@ L'app tourne ensuite sur [http://localhost:5173](http://localhost:5173).
 | `npm run build` | Build de production dans `dist/` |
 | `npm run preview` | Prévisualisation du build local |
 | `npm run lint` | ESLint (React + hooks, max 0 warnings) |
-| `npm run login` | Connexion Vercel CLI |
-| `npm run deploy` | Déploiement production sur Vercel |
+| `npm run login` | Connexion Vercel CLI (`npx vercel login`) |
+| `npm run deploy` | Déploiement production sur Vercel (`npx vercel --prod`) |
 
 ## Structure du projet
 
@@ -76,20 +75,22 @@ L'app tourne ensuite sur [http://localhost:5173](http://localhost:5173).
 src/
 ├── main.jsx              # Point d'entrée React
 ├── App.jsx               # Canvas R3F + KeyboardControls + Physics
-├── Experience.jsx        # Boucle de jeu, contrôles, logique de fusion
+├── Experience.jsx        # Boucle de jeu, contrôles, logique de fusion, effets
 ├── Pokeball.jsx          # Composant ball (RigidBody) + types + scoring
-├── Playground.jsx        # Cage de jeu (sols, murs, colliders, poteaux)
+├── Playground.jsx        # Cage de jeu (dais, socle, murs, poteaux, néons)
 ├── Particles.jsx         # Bursts de particules à la fusion
-├── Ui.jsx                # HUD score + écran Game Over
-├── materials.js          # Textures et matériaux (dont shader des particules)
-├── stores/useGame.jsx    # Store Zustand (score, phase, particules)
-├── shaders/particles/    # Fichiers GLSL (vertex + fragment)
-└── index.css             # Style global et HUD
+├── Ui.jsx                # HUD score, menu démarrage, settings, écran Game Over
+├── audio.js              # Tone.js : SFX procéduraux + musique d'ambiance
+├── textureFactory.js     # Génération canvas des 11 textures Pokéball
+├── materials.js          # Matériaux PBR + shader inline des particules
+├── stores/useGame.jsx    # Store Zustand (score, phase, isNewRecord…)
+└── index.css             # Style global, HUD, animations menu/score/game-over
 
 public/
-└── *.png                 # Textures des 11 Pokéballs
+├── pokemon_center.hdr    # Env map équirectangulaire (background + IBL)
+└── hot_spring_town.mp3   # Musique d'ambiance (CC0, opengameart)
 ```
 
 ## Déploiement
 
-Le projet est configuré pour Vercel. Une fois authentifié (`npm run login`), un `npm run deploy` pousse en production.
+Le projet est configuré pour Vercel. `vercel` est installé via `npx` (pas de dep runtime) : authentification une fois avec `npm run login`, puis `npm run deploy` pousse en prod.

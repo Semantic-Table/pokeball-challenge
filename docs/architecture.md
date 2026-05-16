@@ -10,7 +10,7 @@
 | Physique | [@react-three/rapier](https://github.com/pmndrs/react-three-rapier) (wrapper Rapier WebAssembly) |
 | Postpro | [@react-three/postprocessing](https://github.com/pmndrs/postprocessing) (Bloom, Vignette) |
 | State global | [Zustand](https://github.com/pmndrs/zustand) |
-| Shaders | [vite-plugin-glsl](https://github.com/UstymUkhman/vite-plugin-glsl) (chargement de `.glsl`, actuellement inutilisé — shaders inline) |
+| Shaders | inline dans `materials.js` (shader des particules de fusion) |
 | Perf | `r3f-perf` (overlay en dev) |
 
 ## Arborescence des composants

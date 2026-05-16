@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import useGame from "./stores/useGame"
 import { ballAssets } from "./textureFactory"
 import {
@@ -46,6 +46,42 @@ export default function Ui() {
 
     const score = useGame(state => state.score)
     const phase = useGame(state => state.phase)
+    const isNewRecord = useGame(state => state.isNewRecord)
+
+    const scoreValueRef = useRef()
+    const prevScore = useRef(score)
+    const goScoreRef = useRef()
+
+    // bump animation sur le score à chaque incrément
+    useEffect(() => {
+        if (score > prevScore.current && scoreValueRef.current) {
+            scoreValueRef.current.classList.remove('bump')
+            // force reflow pour relancer l'animation à chaque hit
+            void scoreValueRef.current.offsetWidth
+            scoreValueRef.current.classList.add('bump')
+        }
+        prevScore.current = score
+    }, [score])
+
+    // count-up animé du score sur le Game Over
+    useEffect(() => {
+        if (phase !== 'ended') return
+        let raf
+        const start = performance.now()
+        const duration = 1200
+        const animate = () => {
+            const t = Math.min((performance.now() - start) / duration, 1)
+            const eased = 1 - Math.pow(1 - t, 3)
+            const v = Math.floor(score * eased)
+            if (goScoreRef.current) goScoreRef.current.textContent = v.toString()
+            if (t < 1) raf = requestAnimationFrame(animate)
+        }
+        const timer = setTimeout(() => { raf = requestAnimationFrame(animate) }, 900)
+        return () => {
+            clearTimeout(timer)
+            if (raf) cancelAnimationFrame(raf)
+        }
+    }, [phase, score])
 
     const [settingsOpen, setSettingsOpen] = useState(false)
     const [musicLvl, setMusicLvl] = useState(() => getMusicLevel())
@@ -100,7 +136,7 @@ export default function Ui() {
         {phase === 'playing' && <>
             <div className="score">
                 <div className="title">Score</div>
-                <div className="value">{score}</div>
+                <div ref={scoreValueRef} className="value">{score}</div>
             </div>
 
             <div className="evolution-chain">
@@ -140,9 +176,22 @@ export default function Ui() {
         </div>}
 
         {phase === 'ended' && <div className="game-over">
-            <div className="title">Game Over</div>
-            <div className="highscore">High Score : {highscore}</div>
-            <div className="subtitle">Press R to restart</div>
+            <div className="go-card">
+                <div className="go-title">Game Over</div>
+                <div className="go-score-block">
+                    <span className="go-score-label">Score</span>
+                    <span ref={goScoreRef} className="go-score-value">0</span>
+                </div>
+                {isNewRecord && <div className="go-record-badge">New Record!</div>}
+                <div className="go-highscore">Best: {highscore}</div>
+                <button
+                    className="go-restart-btn"
+                    onClick={() => useGame.getState().start()}
+                >
+                    Play Again
+                </button>
+                <div className="go-restart-hint">or press R</div>
+            </div>
         </div>}
     </div>
 }

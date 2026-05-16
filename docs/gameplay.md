@@ -42,7 +42,7 @@ Quand la collision matche :
 3. Les deux balls fusionnées sont retirées du state local `pokeballs` (filtrage par `pokeballId`).
 4. Une nouvelle ball du type suivant est insérée.
 
-⚠️ Le wrap `10 → 0` signifie que **fusionner deux Masterballs ramène à la Pokéball**. C'est probablement un bug (la chaîne devrait s'arrêter à Masterball). Voir [`CLAUDE.md`](../CLAUDE.md) pour le contexte.
+✅ La fusion **s'arrête au rang Master** : deux Master balls qui se touchent ne fusionnent pas. Une vérification `if (targetType >= MASTERBALL) return` dans `onPokeballCollide` cap la chaîne au rang final.
 
 ## Game Over
 

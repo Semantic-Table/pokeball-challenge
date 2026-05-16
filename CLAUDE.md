@@ -18,7 +18,7 @@ Le code est en français côté nommage des Pokéballs (`Rapideball`, `Soinball`
 - **Zustand** (avec `subscribeWithSelector`) pour l'état global
 - **leva** (importé mais non utilisé actuellement dans `Playground.jsx`)
 - **r3f-perf** pour le moniteur de perf en dev
-- **vite-plugin-glsl** configuré, mais les shaders sont en réalité inline dans `materials.js` — les fichiers `.glsl` du dossier `src/shaders/particles/` ne sont **pas importés**.
+- Les shaders sont **inline** dans `materials.js` (shader des particules de fusion). Pas de plugin GLSL, pas de fichiers `.glsl` externes.
 
 ## Architecture
 
@@ -49,7 +49,7 @@ Implémentée dans `onPokeballCollide(manifold, target, other)` :
 - Détection de l'égalité de type via `target.rigidBodyObject.name === other.rigidBodyObject.name`
   → **le `name` du RigidBody sert littéralement à stocker l'entier de type**.
 - Position de la nouvelle ball = moyenne du `solverContactPoint(0)` et de la position de `other`.
-- Type suivant : `name === 10 ? 0 : name + 1`. **Attention** : la Masterball (10) wrap à 0, ce qui est probablement un bug — à confirmer avant correction.
+- Type suivant : `name + 1`, **mais on early-return si `targetType >= MASTERBALL`** — la Masterball est le rang final, deux Masters ne fusionnent pas (elles se touchent normalement). Sans ce check, l'ancien code wrappait à `0` (Pokéball minuscule à la place de deux Master énormes — bug confirmé en jeu).
 - Les deux balls fusionnées sont retirées du state local via `pokeballs.filter(...)`.
 - Un burst de particules est poussé dans le store Zustand.
 
@@ -109,6 +109,6 @@ Logique dans `Pokeball.jsx` :
 - **Avant de changer la fusion** : vérifier le bug `name === 10 ? 0 : name + 1` (probablement `name === 10 ? 10 : name + 1`).
 - **Avant de toucher au déplacement** : input → world conversion passe par le forward/right de la caméra. Si tu modifies le sens des axes, vérifier les 4 directions (gauche/droite + avant/arrière) APRÈS rotation orbitale, pas seulement avec la vue par défaut.
 - **Si tu ajoutes des types de balls** : mettre à jour `PokeballType`, `typeToScore`, `typeToColor`, `typeToMaterial`, `materials.js` (passer par `makeBallMaterial(key)`), ajouter un `paintXxx` dans `textureFactory.js` et l'exposer dans `ballAssets`, et mettre à jour l'`evolutionChain` dans `Ui.jsx`.
-- **Si tu veux utiliser les shaders `.glsl`** : ils existent dans `src/shaders/particles/` mais ne sont pas importés. Le plugin `vite-plugin-glsl` est déjà configuré pour les charger en string.
+- **Si tu veux séparer les shaders dans des fichiers `.glsl`** : il faudra réinstaller `vite-plugin-glsl` et le réajouter dans `vite.config.js`. Actuellement les shaders sont inline dans `materials.js`.
 - **Ne pas ajouter** de README/CLAUDE.md/docs supplémentaires sans demande explicite.
 - **Ne pas commit** sans demande explicite de l'utilisateur.

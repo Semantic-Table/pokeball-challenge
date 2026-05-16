@@ -34,35 +34,169 @@ z-index: 1;
 .score {
   position: absolute;
   display: flex;
-  
   top: 0;
   left: 0;
   z-index: 3;
   color: #fff;
   font-size: 2rem;
   padding: 1rem;
-
 }
 
 .score .title {
   margin-right: 1rem;
 }
 
+.score .value {
+  display: inline-block;
+  transform-origin: left center;
+}
+
+.score .value.bump {
+  animation: score-bump 0.42s ease-out;
+}
+
+@keyframes score-bump {
+  0% { transform: scale(1); color: #fff; text-shadow: none; }
+  30% {
+    transform: scale(1.22);
+    color: #ffaadc;
+    text-shadow: 0 0 14px rgba(255, 138, 213, 0.85);
+  }
+  100% { transform: scale(1); color: #fff; text-shadow: none; }
+}
+
+/* ---- Game Over screen ---- */
+
 .game-over {
   position: absolute;
+  inset: 0;
+  z-index: 4;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
-  top: 0;
-  left: 0;
-  z-index: 2;
   color: #fff;
-  font-size: 2rem;
-  padding: 1rem;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.5);
+  pointer-events: auto;
+  background: rgba(0, 0, 0, 0.55);
+  animation: go-fade-in 0.4s ease-out both;
+}
+
+@keyframes go-fade-in {
+  from { background: rgba(0, 0, 0, 0); }
+  to { background: rgba(0, 0, 0, 0.55); }
+}
+
+.go-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 2.2rem 2.8rem;
+  min-width: 18rem;
+  background: rgba(20, 14, 35, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 138, 163, 0.4);
+  border-radius: 18px;
+  text-align: center;
+  animation: card-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.go-title {
+  font-size: 3rem;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.02em;
+  text-shadow:
+    0 0 12px rgba(255, 138, 213, 0.7),
+    0 0 24px rgba(255, 138, 213, 0.35);
+  animation: el-in-y 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+
+.go-score-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  margin-top: 0.5rem;
+  animation: el-in-y 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.7s both;
+}
+
+.go-score-label {
+  font-size: 0.85rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.go-score-value {
+  font-size: 4.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  text-shadow:
+    0 0 18px rgba(255, 196, 142, 0.75),
+    0 0 36px rgba(255, 138, 213, 0.4);
+}
+
+.go-record-badge {
+  background: linear-gradient(135deg, #ff7ad6, #7ad9ff);
+  color: #1a0e2e;
+  padding: 0.4rem 1.4rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 1.05rem;
+  letter-spacing: 0.06em;
+  box-shadow: 0 0 18px rgba(255, 138, 213, 0.65);
+  margin-top: 0.3rem;
+  animation: badge-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 2.15s both;
+}
+
+@keyframes badge-pop {
+  0% { opacity: 0; transform: scale(0.4); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.go-highscore {
+  font-size: 1rem;
+  opacity: 0.65;
+  letter-spacing: 0.06em;
+  animation: el-in 0.4s 2.3s both;
+}
+
+.go-restart-btn {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 600;
+  font-size: 1.3rem;
+  letter-spacing: 0.06em;
+  padding: 0.5rem 2rem;
+  background: linear-gradient(135deg, #ff7ad6 0%, #7ad9ff 100%);
+  color: #1a0e2e;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow:
+    0 0 16px rgba(255, 138, 213, 0.45),
+    0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+  margin-top: 0.6rem;
+  animation: el-in 0.5s 2.5s both;
+}
+
+.go-restart-btn:hover {
+  transform: scale(1.04);
+  box-shadow:
+    0 0 26px rgba(255, 138, 213, 0.7),
+    0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.go-restart-btn:active { transform: scale(0.97); }
+
+.go-restart-hint {
+  font-size: 0.8rem;
+  opacity: 0.45;
+  margin-top: 0.2rem;
+  letter-spacing: 0.05em;
+  animation: el-in 0.4s 2.75s both;
 }
 
 .evolution-chain {
@@ -145,6 +279,35 @@ z-index: 1;
   color: #fff;
   text-align: center;
   user-select: none;
+  animation: card-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes el-in-y {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes el-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes button-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 18px rgba(255, 138, 213, 0.45),
+      0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 32px rgba(255, 138, 213, 0.8),
+      0 4px 16px rgba(0, 0, 0, 0.35);
+  }
 }
 
 .game-title {
@@ -158,6 +321,7 @@ z-index: 1;
     0 0 24px rgba(255, 138, 213, 0.35),
     0 0 40px rgba(122, 217, 255, 0.25);
   margin: 0;
+  animation: el-in-y 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
 }
 
 .game-subtitle {
@@ -165,6 +329,7 @@ z-index: 1;
   opacity: 0.7;
   letter-spacing: 0.18em;
   text-transform: uppercase;
+  animation: el-in-y 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.28s both;
 }
 
 .highscore-line {
@@ -174,6 +339,7 @@ z-index: 1;
   border-top: 1px solid rgba(255, 138, 163, 0.25);
   border-bottom: 1px solid rgba(255, 138, 163, 0.25);
   letter-spacing: 0.05em;
+  animation: el-in 0.5s 0.4s both;
 }
 
 .start-button {
@@ -192,13 +358,11 @@ z-index: 1;
     0 4px 12px rgba(0, 0, 0, 0.3);
   transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
   margin-top: 0.3rem;
+  animation: el-in 0.5s 0.5s both, button-pulse 2.4s 1.5s infinite ease-in-out;
 }
 
 .start-button:hover {
   transform: scale(1.04);
-  box-shadow:
-    0 0 28px rgba(255, 138, 213, 0.7),
-    0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .start-button:active {
@@ -213,6 +377,7 @@ z-index: 1;
   opacity: 0.55;
   margin-top: 0.4rem;
   letter-spacing: 0.04em;
+  animation: el-in 0.5s 0.65s both;
 }
 
 /* ---- Settings (gear + panel) ---- */

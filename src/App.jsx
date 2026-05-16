@@ -2,7 +2,6 @@ import { KeyboardControls } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { useMemo } from 'react'
-import './App.css'
 import Experience from './Experience'
 import Ui from './Ui'
 
@@ -34,7 +33,7 @@ function App() {
           camera={{ position: [0, 5.5, 8], fov: 45 }}
           gl={{ antialias: true }}
         >
-          <Physics debug={false} numSolverIterations={8} numAdditionalFrictionIterations={4}>
+          <Physics debug={false} numSolverIterations={12} numAdditionalFrictionIterations={6}>
             <Experience />
           </Physics>
         </Canvas>

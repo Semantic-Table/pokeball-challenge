@@ -40,9 +40,13 @@ export function Pokeball({ type, position, onCollisionEnter, onEscape, onVanish,
         const pos = ball.current.parent.position
         const insideXZ = pos.x > -1.5 && pos.x < 1.5 && pos.z > -0.9 && pos.z < 0.9
         const belowCeiling = pos.y + radius < OOB_CEILING
+        // "vraiment échappée" : centre PASSÉ la face extérieure des murs (z=±1.3,
+        // x=±1.9). Plus large que la zone de contact normal/pénétration transitoire
+        // pour éviter de trigger le vanish à chaque collision contre un mur.
+        const trulyEscaped = pos.x < -2.0 || pos.x > 2.0 || pos.z < -1.4 || pos.z > 1.4
 
         // === ESCAPE : ball hors empreinte XZ, vanish dès qu'elle touche le sol ===
-        if (!insideXZ) {
+        if (trulyEscaped) {
             // si OOB countdown était actif, on le clear (cette ball ne va pas
             // déclencher Game Over, elle disparait dans le vide)
             if (oobSince.current !== null) {
@@ -54,7 +58,7 @@ export function Pokeball({ type, position, onCollisionEnter, onEscape, onVanish,
                 escapeStart.current = performance.now()
                 onEscape && onEscape({ x: pos.x, y: pos.y + 0.05, z: pos.z })
             }
-        } else if (belowCeiling) {
+        } else if (insideXZ && belowCeiling) {
             if (oobSince.current !== null) {
                 oobSince.current = null
                 useGame.getState().removePokeball(pokeballId)
@@ -117,7 +121,24 @@ export function Pokeball({ type, position, onCollisionEnter, onEscape, onVanish,
 
         addScore(typeToScore(type))
 
+        // défensif : si pour une raison ou une autre la ball persiste après un
+        // restart (race condition avec setPokeballs), reset l'OOB state à l'entrée
+        // en phase 'playing' pour éviter un game over instantané
+        const unsub = useGame.subscribe(
+            (state) => state.phase,
+            (phase) => {
+                if (phase === 'playing') {
+                    oobSince.current = null
+                    setShowOOB(false)
+                    if (useGame.getState().pokeballsOutOfBounds.some(p => p.id === pokeballId)) {
+                        useGame.getState().removePokeball(pokeballId)
+                    }
+                }
+            }
+        )
+
         return () => {
+            unsub()
             if (useGame.getState().pokeballsOutOfBounds.some(p => p.id === pokeballId)) {
                 useGame.getState().removePokeball(pokeballId)
             }
@@ -140,6 +161,7 @@ export function Pokeball({ type, position, onCollisionEnter, onEscape, onVanish,
             linearDamping={0.25}
             angularDamping={0.6}
             ccd
+            canSleep={false}
         >
             <mesh geometry={sphereGeometry} material={material} ref={ball} castShadow receiveShadow>
             </mesh>
@@ -201,12 +223,6 @@ export const typeToScore = (type) => {
 }
 
 export const sphereGeometry = new THREE.SphereGeometry(0.2, 16, 16)
-export const basicMaterial = new THREE.MeshBasicMaterial({
-    toneMapped: false,
-})
-
-
-
 
 export const adaptScale = (type) => {
     return (type + 5) * 0.3
@@ -228,35 +244,6 @@ const GLOW_PALETTE = [
 ]
 
 export const typeToGlowColor = (type) => GLOW_PALETTE[type] || '#ffffff'
-
-export const typeToColor = (type) => {
-    switch (type) {
-        case PokeballType.POKEBALL:
-            return 0xff0000
-        case PokeballType.SUPERBALL:
-            return 0x00ff00
-        case PokeballType.HYPERBALL:
-            return 0x0000ff
-        case PokeballType.RAPIDEBALL:
-            return 0xffff00
-        case PokeballType.SAFARIBALL:
-            return 0xff00ff
-        case PokeballType.SOINBALL:
-            return 0x00ffff
-        case PokeballType.HONORBALL:
-            return 0x000000
-        case PokeballType.LUXEBALL:
-            return 0x808080
-        case PokeballType.SOMBREBALL:
-            return 0x800000
-        case PokeballType.ETRANGEBALL:
-            return 0x008000
-        case PokeballType.MASTERBALL:
-            return 0x000080
-        default:
-            return 0xff0000
-    }
-}
 
 export const typeToMaterial = (type) => {
     switch (type) {

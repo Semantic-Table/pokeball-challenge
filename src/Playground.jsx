@@ -1,5 +1,7 @@
 import { MeshReflectorMaterial } from "@react-three/drei";
 import { CuboidCollider } from "@react-three/rapier";
+import { useFrame } from "@react-three/fiber";
+import { forwardRef, useRef } from "react";
 
 const xE = 1.5;
 const zE = 0.9;
@@ -10,27 +12,50 @@ const NEON_TOP = '#ff7ad6';
 const NEON_BOT = '#7ad9ff';
 const NEON_I = 2.2;
 
-const NeonBar = ({ position, args, color }) => (
+const NeonBar = forwardRef(({ position, args, color }, ref) => (
     <mesh position={position}>
         <boxGeometry args={args} />
         <meshStandardMaterial
+            ref={ref}
             color={color}
             emissive={color}
             emissiveIntensity={NEON_I}
             toneMapped={false}
         />
     </mesh>
-);
+));
 
 export default function Playground() {
 
+    const topMats = useRef([])
+    const botMats = useRef([])
+    const daisMat = useRef()
+
+    useFrame(({ clock }) => {
+        const t = clock.elapsedTime
+        // les néons respirent à deux fréquences légèrement différentes pour ne pas
+        // pulser en sync (plus organique)
+        const topI = 2.2 + Math.sin(t * 1.2) * 0.45
+        const botI = 2.0 + Math.sin(t * 1.0 + Math.PI / 3) * 0.35
+        const daisI = 2.4 + Math.sin(t * 0.7 + Math.PI / 5) * 0.25
+        for (let i = 0; i < topMats.current.length; i++) {
+            if (topMats.current[i]) topMats.current[i].emissiveIntensity = topI
+        }
+        for (let i = 0; i < botMats.current.length; i++) {
+            if (botMats.current[i]) botMats.current[i].emissiveIntensity = botI
+        }
+        if (daisMat.current) daisMat.current.emissiveIntensity = daisI
+    })
+
     return <>
-        {/* physique : sol + 4 murs invisibles, alignés sur le contour visible de la cage */}
+        {/* physique : sol + 4 murs invisibles, alignés sur le contour visible de la cage.
+            Murs épaissis à 0.4 (half-extent) + recouvrement aux coins pour éviter les
+            squeeze-through quand une pile met de la pression. */}
         <CuboidCollider args={[10, 0.2, 10]} position={[0, -0.1, 0]} />
-        <CuboidCollider args={[0.2, 2, 0.8]} position={[-1.7, 2, 0]} />
-        <CuboidCollider args={[0.2, 2, 0.8]} position={[1.7, 2, 0]} />
-        <CuboidCollider args={[1.7, 2, 0.2]} position={[0, 2, -1.1]} />
-        <CuboidCollider args={[1.7, 2, 0.2]} position={[0, 2, 1.1]} />
+        <CuboidCollider args={[0.4, 2, 1.1]} position={[-1.9, 2, 0]} />
+        <CuboidCollider args={[0.4, 2, 1.1]} position={[1.9, 2, 0]} />
+        <CuboidCollider args={[1.9, 2, 0.4]} position={[0, 2, -1.3]} />
+        <CuboidCollider args={[1.9, 2, 0.4]} position={[0, 2, 1.3]} />
 
         {/* dais flottant — corps blanc cassé */}
         <mesh position={[0, -0.18, 0]} receiveShadow>
@@ -60,6 +85,7 @@ export default function Playground() {
         <mesh position={[0, 0.005, 0]} rotation={[-Math.PI / 2, 0, 0]}>
             <ringGeometry args={[4.96, 5.04, 96]} />
             <meshStandardMaterial
+                ref={daisMat}
                 color="#7ad9ff"
                 emissive="#7ad9ff"
                 emissiveIntensity={2.4}
@@ -91,15 +117,15 @@ export default function Playground() {
         ))}
 
         {/* 4 arêtes du haut — néon rose */}
-        <NeonBar position={[0, yT, -zE]} args={[xE * 2 + t, t, t]} color={NEON_TOP} />
-        <NeonBar position={[0, yT, zE]}  args={[xE * 2 + t, t, t]} color={NEON_TOP} />
-        <NeonBar position={[-xE, yT, 0]} args={[t, t, zE * 2]} color={NEON_TOP} />
-        <NeonBar position={[xE, yT, 0]}  args={[t, t, zE * 2]} color={NEON_TOP} />
+        <NeonBar ref={el => topMats.current[0] = el} position={[0, yT, -zE]} args={[xE * 2 + t, t, t]} color={NEON_TOP} />
+        <NeonBar ref={el => topMats.current[1] = el} position={[0, yT, zE]}  args={[xE * 2 + t, t, t]} color={NEON_TOP} />
+        <NeonBar ref={el => topMats.current[2] = el} position={[-xE, yT, 0]} args={[t, t, zE * 2]} color={NEON_TOP} />
+        <NeonBar ref={el => topMats.current[3] = el} position={[xE, yT, 0]}  args={[t, t, zE * 2]} color={NEON_TOP} />
 
         {/* 4 arêtes du bas — néon cyan */}
-        <NeonBar position={[0, 0.12, -zE]} args={[xE * 2 + t, t, t]} color={NEON_BOT} />
-        <NeonBar position={[0, 0.12, zE]}  args={[xE * 2 + t, t, t]} color={NEON_BOT} />
-        <NeonBar position={[-xE, 0.12, 0]} args={[t, t, zE * 2]} color={NEON_BOT} />
-        <NeonBar position={[xE, 0.12, 0]}  args={[t, t, zE * 2]} color={NEON_BOT} />
+        <NeonBar ref={el => botMats.current[0] = el} position={[0, 0.12, -zE]} args={[xE * 2 + t, t, t]} color={NEON_BOT} />
+        <NeonBar ref={el => botMats.current[1] = el} position={[0, 0.12, zE]}  args={[xE * 2 + t, t, t]} color={NEON_BOT} />
+        <NeonBar ref={el => botMats.current[2] = el} position={[-xE, 0.12, 0]} args={[t, t, zE * 2]} color={NEON_BOT} />
+        <NeonBar ref={el => botMats.current[3] = el} position={[xE, 0.12, 0]}  args={[t, t, zE * 2]} color={NEON_BOT} />
     </>
 }
