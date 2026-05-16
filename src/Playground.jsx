@@ -1,8 +1,8 @@
 import { MeshReflectorMaterial } from "@react-three/drei";
 import { CuboidCollider } from "@react-three/rapier";
 
-const xE = 2.0;
-const zE = 1.2;
+const xE = 1.5;
+const zE = 0.9;
 const yT = 4;
 const t = 0.04;
 
@@ -25,12 +25,12 @@ const NeonBar = ({ position, args, color }) => (
 export default function Playground() {
 
     return <>
-        {/* physique : sol + 4 murs invisibles */}
+        {/* physique : sol + 4 murs invisibles, alignés sur le contour visible de la cage */}
         <CuboidCollider args={[10, 0.2, 10]} position={[0, -0.1, 0]} />
-        <CuboidCollider args={[0.2, 2, 1]} position={[-2, 2, 0]} />
-        <CuboidCollider args={[0.2, 2, 1]} position={[2, 2, 0]} />
-        <CuboidCollider args={[2, 2, 0.2]} position={[0, 2, -1.2]} />
-        <CuboidCollider args={[2, 2, 0.2]} position={[0, 2, 1.2]} />
+        <CuboidCollider args={[0.2, 2, 0.8]} position={[-1.7, 2, 0]} />
+        <CuboidCollider args={[0.2, 2, 0.8]} position={[1.7, 2, 0]} />
+        <CuboidCollider args={[1.7, 2, 0.2]} position={[0, 2, -1.1]} />
+        <CuboidCollider args={[1.7, 2, 0.2]} position={[0, 2, 1.1]} />
 
         {/* dais flottant — corps blanc cassé */}
         <mesh position={[0, -0.18, 0]} receiveShadow>

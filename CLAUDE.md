@@ -77,19 +77,21 @@ Logique dans `Pokeball.jsx` :
 - **Pas de TypeScript** — tout est en `.jsx` simple.
 - Les **identifiants de balls** sont des `Math.random()` (`pokeball.key`). Pas de risque de collision en pratique, mais c'est fragile.
 - Les **types** sont des entiers (0 → 10). Le wrap `10 → 0` est probablement une régression à corriger.
-- Les **murs latéraux** de la cage sont à `±2` (collider) et `±1.8` (mesh visuel). Les **bornes de mouvement** du fantôme sont à `±1.6` (`horizontalBorder`) et `±0.8` (`verticalBorder`).
+- La **cage** : surface intérieure des colliders et poteaux visibles alignés à `±1.5` (X) et `±0.9` (Z), hauteur 4. Les **bornes de mouvement** du fantôme sont à `±1.3` (`horizontalBorder`) et `±0.7` (`verticalBorder`).
 - Le déplacement est **relatif à la caméra** : `forward` et `right` sont recalculés chaque frame à partir de `camera.getWorldDirection()`. La cage reste axis-aligned en world space, donc les bornes (`±1.6` / `±0.8`) ne tournent pas avec la caméra — c'est voulu.
 - `Playground.jsx` importe `useControls` de leva **sans s'en servir** : import mort, peut être supprimé.
 - Le **highscore** est lu/écrit en `localStorage` (`'highscore'`).
 - L'effet `Bloom` est paramétré à `luminanceThreshold: 0.55` (mipmapBlur) : il accroche les highlights des matériaux PBR et les liserés néon `emissive`+`toneMapped:false` de `Playground.jsx`.
-- Les Pokéballs utilisent `MeshStandardMaterial` (textures en `SRGBColorSpace`) et **dépendent du `<Environment>` de drei** pour leurs reflets. Désactiver l'Environment = balls plates.
+- Les Pokéballs utilisent `MeshStandardMaterial` avec des `CanvasTexture` peintes programmatiquement dans `textureFactory.js` (équirectangulaires 1024×512). Plus de PNG dans `public/`. Les matériaux **dépendent du `<Environment>` de drei** pour leurs reflets — sans Environment les balls deviennent plates.
 - L'`<Environment>` charge un **HDR** (`public/pokemon_center.hdr`) en `background` : il sert à la fois de fond visible **et** de source de reflets/illumination pour tous les matériaux PBR. Si le HDR est remplacé, ajuster `directionalLight.intensity` et `ambientLight.intensity` en conséquence (un HDR très lumineux suffit à éclairer la scène à lui seul).
 - Les ombres dépendent de `shadows` sur `<Canvas>` + `castShadow` sur la lumière directionnelle + `castShadow`/`receiveShadow` sur les meshes concernés. Tout est déjà câblé ; ne pas oublier ces flags sur tout nouveau mesh.
 - Le sol utilise `MeshReflectorMaterial` (resolution 512) — coûteux. Si la perf chute, baisser à 256 ou supprimer la réflexion.
 - La cage est un **châssis** : 4 poteaux chromés (chrome `MeshStandard` metalness 1) + 8 arêtes néon (rose en haut, cyan en bas, `emissive + toneMapped:false` → bloomées). Pas de faces pleines : la visibilité à travers la cage est totale, et c'est volontaire (sinon viser est pénible).
 - Le **réticule** est un `<group>` qui contient deux meshes : la ligne verticale + un anneau de réception posé au sol. Le `useFrame` met à jour le `position.x` et `position.z` du groupe, les deux enfants suivent automatiquement.
 - L'**environnement** est un **HDR équirectangulaire** (`public/pokemon_center.hdr`) chargé via `<Environment files="./pokemon_center.hdr" background />`. C'est lui qui fournit le fond visible **et** la cubemap de reflets. Plus de `PokeDome`, plus de `<Stars>`, plus de fog (l'HDR donne déjà sa propre ambiance de profondeur).
-- Les `<Sparkles>` ambiantes et les bursts de `Particles` à la fusion sont **désactivés pour le moment** (JSX retiré de `Experience.jsx`). Le fichier `Particles.jsx` et les actions `addParticle`/`removeParticle` du store sont intacts — réactivation = remonter le JSX + appeler `addParticle` dans `onPokeballCollide`.
+- Les `<Sparkles>` ambiantes restent **désactivées**. Les bursts de `Particles` à la fusion sont **réactivés** et colorés via `typeToGlowColor` (palette dans `Pokeball.jsx`).
+- À chaque fusion, `onPokeballCollide` déclenche **3 effets de juice** (en plus du spawn pop de la nouvelle ball) : un `MergeRing` (anneau néon billboard qui grandit et fade en ~380ms), un `ScorePopup` (HTML overlay drei `<Html>` qui remonte et fade en ~850ms), et un burst de `Particles`. Le state `mergeEffects` est local à `Experience.jsx` et auto-nettoyé par `setTimeout(900)`.
+- **Spawn pop** dans `Pokeball.jsx` : le mesh interne de chaque ball s'anime de scale 0 → 1 avec easeOutBack en 220 ms à la naissance. La physique reste à pleine taille dès le spawn (collider sur le RigidBody, le pop n'affecte que le visuel).
 - `Particles` est démonté après 200 ms (`setTimeout`) — court, à ne pas allonger sans réfléchir, car les particules s'éloignent vite à cause du shader (`position * uTime * 100 * aVelocity`).
 
 ## Scripts
@@ -106,7 +108,7 @@ Logique dans `Pokeball.jsx` :
 
 - **Avant de changer la fusion** : vérifier le bug `name === 10 ? 0 : name + 1` (probablement `name === 10 ? 10 : name + 1`).
 - **Avant de toucher au déplacement** : input → world conversion passe par le forward/right de la caméra. Si tu modifies le sens des axes, vérifier les 4 directions (gauche/droite + avant/arrière) APRÈS rotation orbitale, pas seulement avec la vue par défaut.
-- **Si tu ajoutes des types de balls** : mettre à jour `PokeballType`, `typeToScore`, `typeToColor`, `typeToMaterial`, `materials.js` (passer par `makeBallMaterial(texture)`), et `public/` (texture PNG).
+- **Si tu ajoutes des types de balls** : mettre à jour `PokeballType`, `typeToScore`, `typeToColor`, `typeToMaterial`, `materials.js` (passer par `makeBallMaterial(key)`), ajouter un `paintXxx` dans `textureFactory.js` et l'exposer dans `ballAssets`, et mettre à jour l'`evolutionChain` dans `Ui.jsx`.
 - **Si tu veux utiliser les shaders `.glsl`** : ils existent dans `src/shaders/particles/` mais ne sont pas importés. Le plugin `vite-plugin-glsl` est déjà configuré pour les charger en string.
 - **Ne pas ajouter** de README/CLAUDE.md/docs supplémentaires sans demande explicite.
 - **Ne pas commit** sans demande explicite de l'utilisateur.

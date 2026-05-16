@@ -72,13 +72,23 @@ Pas de faces pleines (versions précédentes avaient une vitrine de verre `MeshP
 
 Les arêtes émissives passent au-dessus du seuil de bloom (`luminanceThreshold: 0.55` avec `toneMapped:false`) → halo rose/cyan automatique.
 
-## Pokéballs — matériaux
+## Pokéballs — textures et matériaux
 
-Dans `materials.js`. Chaque type a sa texture PNG, chargée en `SRGBColorSpace` avec `anisotropy: 8` :
+### Textures générées au canvas
+
+Les textures ne sont **plus chargées depuis des PNG** — elles sont peintes au runtime dans `src/textureFactory.js` via Canvas 2D, puis enveloppées en `THREE.CanvasTexture`. Avantages : symétrie parfaite (programmatique), palette cohérente et modifiable en une ligne, pas de fichier binaire dans le repo.
+
+Format : 1024×512 équirectangulaire 2:1. La bande noire centrale = équateur de la sphère, le cercle blanc = bouton. Seule la calotte supérieure et les ornements varient par type (`paintPokeball`, `paintSuperball`, etc.).
+
+`ballAssets.X.texture` expose la `CanvasTexture` (utilisée par `materials.js`), `ballAssets.X.dataURL` une data URL PNG lazy (utilisée par `Ui.jsx` pour les vignettes de la chaîne d'évolution).
+
+### Matériaux
+
+Dans `materials.js`. Chaque type a son matériau, basé sur `MeshStandardMaterial` :
 
 ```js
 new THREE.MeshStandardMaterial({
-    map: texture,
+    map: ballAssets[key].texture,
     metalness: 0.25,
     roughness: 0.4,
     envMapIntensity: 1.1,

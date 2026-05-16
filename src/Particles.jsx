@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import * as THREE from "three";
 import useGame from "./stores/useGame";
 
 import { useFrame } from "@react-three/fiber";
 import { particleMaterial } from "./materials";
+import { typeToGlowColor } from "./Pokeball";
 
 
 
@@ -10,7 +12,15 @@ export default function Particles({ position, id, type }) {
 
     const [particlesPositions, setParticlesPositions] = useState(null);
     const [particlesVelocities, setParticlesVelocities] = useState(null);
-    const [myParticlesMaterial, setMyParticlesMaterial] = useState(particleMaterial.clone());
+    const [myParticlesMaterial] = useState(() => {
+        const mat = particleMaterial.clone();
+        const c = new THREE.Color(typeToGlowColor(type));
+        // boost ×2.5 pour que les particules captent le Bloom sans cramer
+        mat.uniforms.uColor = { value: new THREE.Vector3(c.r * 2.5, c.g * 2.5, c.b * 2.5) };
+        mat.uniforms.uSize = { value: 40 };
+        mat.uniforms.uTime = { value: 0 };
+        return mat;
+    });
 
     const particlesCount = 100;
 

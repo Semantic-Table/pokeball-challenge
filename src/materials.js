@@ -1,49 +1,30 @@
 import * as THREE from 'three';
+import { ballAssets } from './textureFactory';
 
-const loadBallTexture = (path) => {
-    const tex = new THREE.TextureLoader().load(path);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = 8;
-    return tex;
-};
-
-const pokeballTexture = loadBallTexture('./pokeball.png');
-const honorballTexture = loadBallTexture('./honorball.png');
-const hyperballTexture = loadBallTexture('./hyperball.png');
-const luxeballTexture = loadBallTexture('./luxeball.png');
-const masterballTexture = loadBallTexture('./masterball.png');
-const rapideballTexture = loadBallTexture('./rapideball.png');
-const safariballTexture = loadBallTexture('./safariball.png');
-const soinballTexture = loadBallTexture('./soinball.png');
-const sombreballTexture = loadBallTexture('./sombreball.png');
-const superballTexture = loadBallTexture('./superball.png');
-const etrangeballTexture = loadBallTexture('./etrangeball.png');
-
-
-const makeBallMaterial = (map, opts = {}) => new THREE.MeshStandardMaterial({
-    map,
+const makeBallMaterial = (key, opts = {}) => new THREE.MeshStandardMaterial({
+    map: ballAssets[key].texture,
     metalness: 0.25,
     roughness: 0.4,
     envMapIntensity: 1.1,
     ...opts,
 });
 
-export const pokeballMaterial = makeBallMaterial(pokeballTexture);
-export const honorballMaterial = makeBallMaterial(honorballTexture);
-export const hyperballMaterial = makeBallMaterial(hyperballTexture);
-export const luxeballMaterial = makeBallMaterial(luxeballTexture);
-export const masterballMaterial = makeBallMaterial(masterballTexture, {
+export const pokeballMaterial = makeBallMaterial('pokeball');
+export const honorballMaterial = makeBallMaterial('honorball');
+export const hyperballMaterial = makeBallMaterial('hyperball');
+export const luxeballMaterial = makeBallMaterial('luxeball');
+export const rapideballMaterial = makeBallMaterial('rapideball');
+export const safariballMaterial = makeBallMaterial('safariball');
+export const soinballMaterial = makeBallMaterial('soinball');
+export const sombreballMaterial = makeBallMaterial('sombreball');
+export const superballMaterial = makeBallMaterial('superball');
+export const etrangeballMaterial = makeBallMaterial('etrangeball');
+export const masterballMaterial = makeBallMaterial('masterball', {
     metalness: 0.55,
     roughness: 0.25,
     emissive: new THREE.Color('#7a3df0'),
     emissiveIntensity: 0.35,
 });
-export const rapideballMaterial = makeBallMaterial(rapideballTexture);
-export const safariballMaterial = makeBallMaterial(safariballTexture);
-export const soinballMaterial = makeBallMaterial(soinballTexture);
-export const sombreballMaterial = makeBallMaterial(sombreballTexture);
-export const superballMaterial = makeBallMaterial(superballTexture);
-export const etrangeballMaterial = makeBallMaterial(etrangeballTexture);
 
 export const particleMaterial = new THREE.ShaderMaterial({
     depthWrite: false,

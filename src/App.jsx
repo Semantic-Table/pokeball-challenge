@@ -1,7 +1,6 @@
 import { KeyboardControls } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
-import { Perf } from 'r3f-perf'
 import { useMemo } from 'react'
 import './App.css'
 import Experience from './Experience'
@@ -32,11 +31,10 @@ function App() {
         <Ui />
         <Canvas
           shadows
-          camera={{ position: [0, 5, 8], fov: 45 }}
+          camera={{ position: [0, 5.5, 8], fov: 45 }}
           gl={{ antialias: true }}
         >
-          <Perf />
-          <Physics debug={false}>
+          <Physics debug={false} numSolverIterations={8} numAdditionalFrictionIterations={4}>
             <Experience />
           </Physics>
         </Canvas>

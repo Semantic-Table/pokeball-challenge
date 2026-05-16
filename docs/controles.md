@@ -87,9 +87,9 @@ next.x = THREE.MathUtils.clamp(next.x + _move.x, -horizontalBorder, horizontalBo
 next.z = THREE.MathUtils.clamp(next.z + _move.z, -verticalBorder, verticalBorder)
 ```
 
-`horizontalBorder = 1.6`, `verticalBorder = 0.8` (cage de 3.2 × 1.6 en surface utile, soit légèrement inférieure aux colliders à ±2 / ±1.2 pour garder une marge).
+`horizontalBorder = 1.3`, `verticalBorder = 0.7` (cage de 2.6 × 1.4 en surface utile, soit légèrement inférieure aux colliders à ±1.5 / ±0.9 pour garder une marge).
 
-Conséquence visuelle : quand la caméra est orientée selon l'axe long de la cage, l'utilisateur a 3.2 m de course ; tournée de 90°, il n'a plus que 1.6 m. C'est voulu et physiquement cohérent (la cage ne tourne pas).
+Conséquence visuelle : quand la caméra est orientée selon l'axe long de la cage, l'utilisateur a 2.6 m de course ; tournée de 90°, il n'a plus que 1.4 m. C'est voulu et physiquement cohérent (la cage ne tourne pas).
 
 ## Vecteur de droite — sens du produit vectoriel
 

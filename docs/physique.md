@@ -21,14 +21,14 @@ Dans `Playground.jsx`. 5 colliders statiques (sans `<RigidBody>` — ce sont des
 | Rôle | `args` (half-extents) | `position` |
 |------|----------------------|------------|
 | Sol | `[10, 0.2, 10]` | `[0, -0.1, 0]` |
-| Mur gauche | `[0.2, 2, 1]` | `[-2, 2, 0]` |
-| Mur droite | `[0.2, 2, 1]` | `[2, 2, 0]` |
-| Mur fond | `[2, 2, 0.2]` | `[0, 2, -1.2]` |
-| Mur avant | `[2, 2, 0.2]` | `[0, 2, 1.2]` |
+| Mur gauche | `[0.2, 2, 0.8]` | `[-1.7, 2, 0]` |
+| Mur droite | `[0.2, 2, 0.8]` | `[1.7, 2, 0]` |
+| Mur fond | `[1.7, 2, 0.2]` | `[0, 2, -1.1]` |
+| Mur avant | `[1.7, 2, 0.2]` | `[0, 2, 1.1]` |
 
-⚠️ `args` est exprimé en **demi-extensions** (Rapier convention). Une cage de 4 × 4 × 2.4 dimensionne ses murs latéraux à `args=[0.2, 2, 1]` (donc 0.4 × 4 × 2 chacun).
+⚠️ `args` est exprimé en **demi-extensions** (Rapier convention). Un mur latéral `args=[0.2, 2, 0.8]` mesure donc 0.4 × 4 × 1.6.
 
-L'**intérieur jouable** est `[-1.8, 1.8] × [0, 4] × [-1, 1]` en pratique (en retirant l'épaisseur des murs). Les bornes de déplacement de la ball fantôme sont volontairement plus serrées (`±1.6`, `±0.8`) pour éviter qu'une ball spawne en contact direct avec un mur.
+Les murs sont positionnés pour que leur **surface intérieure** (côté cage) coïncide exactement avec les poteaux chromés visibles. Par exemple, le mur gauche à `position.x = -1.7` avec `half-width = 0.2` a sa face interne à `x = -1.5` — la position des poteaux. L'**intérieur jouable** est donc `[-1.5, 1.5] × [0, 4] × [-0.9, 0.9]`, soit le volume visible de la cage. Les bornes de déplacement de la ball fantôme restent volontairement plus serrées (`±1.3`, `±0.7`) pour conserver une marge de spawn confortable contre les murs.
 
 Pas de **toit** — le haut est ouvert, c'est par là que les balls entrent (et accessoirement c'est par là qu'elles peuvent sortir → Game Over).
 
@@ -85,36 +85,41 @@ Points subtils :
 
 Quand deux balls A et B s'entrechoquent, Rapier déclenche `onCollisionEnter` sur **les deux** : A reçoit un event avec `target=A, other=B`, et B reçoit `target=B, other=A`. Sans précaution, on traiterait la fusion deux fois.
 
-Mitigation actuelle : le `setPokeballs([...filtré, nouvelle])` qui filtre par `pokeballId` opère sur un state React. Le second event utilisera un state stale (les deux balls toujours présentes), mais le filtre virera quand même les deux IDs, et ajoutera une seconde nouvelle ball. Résultat possible : **deux balls fusionnées créent deux balls du type supérieur**, pas une.
+**Mitigation** (en place dans `onPokeballCollide`) : on ne traite que l'event où `target.pokeballId < other.pokeballId`. L'autre event est ignoré. Garantit qu'**une seule** fusion (et un seul jeu d'effets de juice — ring, popup, particules) est déclenchée par paire.
 
-⚠️ Ce bug n'a pas été observé en pratique car le second event arrive après que React ait re-rendu — au moment où il s'exécute, la ball de l'event n'existe plus dans la simulation. Mais c'est une zone fragile.
-
-Si ça pose problème : ajouter un `processedCollisions: Set<string>` dans le store, hasher `(target.pokeballId, other.pokeballId)` triés, et ne traiter qu'une fois par paire.
+```js
+if (target.rigidBodyObject.pokeballId > other.rigidBodyObject.pokeballId) {
+    return  // l'autre event traitera la fusion
+}
+```
 
 ## Détection de sortie de zone
 
 Dans `Pokeball.jsx`, dans le `useFrame` :
 
 ```js
-const isInBounds = (parentPosition) => {
-    return parentPosition.y < 4
-        && parentPosition.x > -2 && parentPosition.x < 2
-        && parentPosition.z > -1.2 && parentPosition.z < 1.2
-}
-
-useFrame((state, delta) => {
-    if (timeToActive < 2000) setTimeToActive(timeToActive + delta * 1000)
-
-    if (ball.current && !isInBounds(ball.current.parent.position) && timeToActive >= 2000) {
-        useGame.getState().end()
-    }
-    // ... pushPokeball / removePokeball pour bloquer le drop
-})
+const radius = 0.2 * adaptScale(type)  // rayon monde de la ball
+const isInBounds = (pos) =>
+    pos.y + radius < OOB_CEILING      // top de la ball sous le plafond (4.3)
+    && pos.x > -1.5 && pos.x < 1.5    // centre dans l'empreinte XZ
+    && pos.z > -0.9 && pos.z < 0.9
 ```
 
-- `timeToActive` accumule en **millisecondes**. Le seuil de 2000 ms donne 2 secondes de grâce au spawn (sinon le `isInBounds` faux au tout début déclencherait Game Over immédiat).
-- `ball.current.parent.position` accède à la position de la `RigidBody` (le parent du mesh).
-- Game Over déclenché **dans la boucle de jeu d'une ball individuelle**, pas dans un système centralisé. Plusieurs balls peuvent appeler `end()` simultanément ; `useGame.end()` est idempotent (si `phase !== 'playing'`, no-op).
+Le check de hauteur est **radius-aware**. Le plafond OOB (`OOB_CEILING = 4.3`) est volontairement au-dessus du toit visible (y=4) : il y a une zone tampon d'environ 30 cm où une ball peut dépasser visuellement sans déclencher le compteur — c'est plus fair, on voit la situation se profiler avant le timer. Le check XZ reste sur le centre — les murs solides empêchent en pratique le centre de sortir, c'est une sécurité défensive.
+
+Chaque ball maintient :
+- `spawnStart` — timestamp `performance.now()` au spawn. Une **grâce de 1500 ms** (`SPAWN_GRACE_MS`) suit pendant laquelle la ball ne peut pas activer le compteur (elle est en train de tomber dans la cage depuis y=5).
+- `oobSince` — timestamp où la ball a passé le plafond après la grâce, sinon `null`.
+
+Logique par frame :
+- **In bounds** (insideXZ && belowCeiling) : si `oobSince ≠ null` → reset + `removePokeball`.
+- **Au-dessus du plafond inside XZ, grâce écoulée** : si `oobSince === null`, démarre le timer + `pushPokeball({id, since: now})` + `setShowOOB(true)`. Si `now - oobSince >= OOB_GRACE_MS` (3000 ms), `useGame.end()`.
+
+⚠️ Variante précédente avec `hasEnteredBounds` retirée : un latch "ball entrée au moins une fois" laissait passer les grosses balls (Master Ball r=0.9) qui spawnent sur une pile déjà trop haute — leur centre n'atteignait jamais `y + r < OOB_CEILING`, le latch ne se déclenchait jamais, le timer non plus. La grâce temporelle garantit qu'**après 1.5s** toute ball au-dessus du plafond compte, peu importe son historique.
+
+Chaque ball OOB rend son **propre chiffre flottant** (drei `<Html>` enfant d'un `<group>` dont la position monde est mise à jour chaque frame par `getWorldPosition`). Le texte est écrit directement dans le DOM (`textContent`) sans re-render React. Style : blanc, gros, glow ambré chaud (CSS `.oob-floating`). Le store `pokeballsOutOfBounds` (`{id, since}[]`) reste utilisé en interne pour bloquer le drop tant qu'une ball est dehors.
+
+Game Over peut être appelé depuis le `useFrame` de **plusieurs** balls simultanément ; `useGame.end()` est idempotent (no-op si `phase !== 'playing'`).
 
 ## Blocage du drop pendant une sortie
 
